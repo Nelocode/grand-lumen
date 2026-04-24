@@ -9,7 +9,7 @@ import { ArrowLeft, Sparkles, AlertCircle } from 'lucide-react'
 import { RoomWithSimilarity, DynamicPriceResult, SearchParams } from '@/lib/types'
 
 interface SearchResult {
-    room: RoomWithSimilarity & { dynamic_price?: DynamicPriceResult }
+    rooms: (RoomWithSimilarity & { dynamic_price?: DynamicPriceResult })[]
     search_params: SearchParams
     query: string
 }
@@ -143,7 +143,7 @@ function SearchResults() {
                             {results.rooms?.length ?? 0} habitaciones recomendadas · Precios ajustados en tiempo real
                         </p>
                         <div className="rooms-grid">
-                            {(results as any).rooms?.map((room: any, index: number) => (
+                            {results.rooms?.map((room, index) => (
                                 <RoomCard
                                     key={room.id}
                                     room={room}
@@ -152,7 +152,7 @@ function SearchResults() {
                                 />
                             ))}
                         </div>
-                        {(!results as any || !(results as any).rooms?.length) && (
+                        {(!results.rooms || results.rooms.length === 0) && (
                             <div style={{ textAlign: 'center', padding: '80px 0' }}>
                                 <p className="font-serif" style={{ fontSize: '1.3rem', color: 'var(--text-secondary)' }}>
                                     No encontramos habitaciones exactas, pero quizás te interese...
