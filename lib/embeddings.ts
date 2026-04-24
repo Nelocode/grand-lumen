@@ -59,3 +59,49 @@ export async function searchRoomsByEmbedding(
 
     return (fallback as Room[]).map((r) => ({ ...r, similarity: 0.7 }))
 }
+
+/**
+ * Genera embeddings para todas las habitaciones en la base de datos.
+ * Útil para inicializar la búsqueda semántica.
+ */
+export async function generateRoomEmbeddings() {
+    const supabase = await createClient()
+    const { data: rooms, error } = await supabase.from('rooms').select('*')
+    if (error || !rooms) throw new Error('Error fetching rooms for embeddings')
+
+    const results = []
+    for (const room of rooms) {
+        try {
+            // Enriquecemos el texto combinando campos clave para un mejor embedding
+            const textToEmbed = `
+                Room: ${room.name}
+                Description: ${room.description}
+                Short: ${room.short_description}
+                Profiles: ${room.intent_profile?.join(', ') || ''}
+                Amenities: ${room.amenities?.join(', ') || ''}
+                Tags: ${room.tags?.join(', ') || ''}
+            `.trim().slice(0, 1500)
+
+            const embedding = await generateEmbedding(textToEmbed)
+
+            const { error: updateError } = await supabase
+                .from('rooms')
+                .update({ embedding: JSON.stringify(embedding) })
+                .eq('id', room.id)
+
+            results.push({
+                room: room.name,
+                success: !updateError,
+                error: updateError ? updateError.message : null
+            })
+        } catch (err) {
+            results.push({
+                room: room.name,
+                success: false,
+                error: (err as Error).message
+            })
+        }
+    }
+
+    return results
+}
