@@ -1,13 +1,23 @@
 import OpenAI from 'openai'
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+let _openai: OpenAI | null = null
+function getOpenAI() {
+    if (!_openai) {
+        if (!process.env.OPENAI_API_KEY) {
+            throw new Error('Missing OPENAI_API_KEY')
+        }
+        _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    }
+    return _openai
+}
+
 
 /**
  * Genera un embedding vectorial de 768 dimensiones con text-embedding-3-small
  * Usamos dimensions:768 para mantener compatibilidad con el schema de pgvector
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
-    const response = await openai.embeddings.create({
+    const response = await getOpenAI().embeddings.create({
         model: 'text-embedding-3-small',
         input: text,
         dimensions: 768,
@@ -28,7 +38,7 @@ export async function parseNaturalSearch(query: string): Promise<{
 }> {
     const today = new Date().toISOString().split('T')[0]
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
         model: 'gpt-4o-mini',
         temperature: 0.2,
         response_format: { type: 'json_object' },
@@ -64,7 +74,7 @@ export async function generateRoomReasoning(
     userQuery: string,
     userIntent: string
 ): Promise<string> {
-    const completion = await openai.chat.completions.create({
+    const completion = await getOpenAI().chat.completions.create({
         model: 'gpt-4o-mini',
         temperature: 0.7,
         max_tokens: 80,
